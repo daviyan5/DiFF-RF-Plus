@@ -29,7 +29,7 @@ class TreeEnsemble:
         self.feature_distribution = []
         self.test_size = 1
 
-        self.distance_scores = np.zeros((1, self.n_trees))
+        self.pointwise_scores = np.zeros((1, self.n_trees))
         self.frequency_scores = np.zeros((1, self.n_trees))
         self.collective_scores = np.zeros((1, self.n_trees))
 
@@ -73,7 +73,7 @@ class TreeEnsemble:
         TODO
         """
 
-        self.distance_scores.resize((len(data), self.n_trees))
+        self.pointwise_scores.resize((len(data), self.n_trees))
         self.frequency_scores.resize((len(data), self.n_trees))
         self.collective_scores.resize((len(data), self.n_trees))
 
@@ -93,12 +93,12 @@ class TreeEnsemble:
             instances = data[cur_idx]
             f = ((node.size + 1)/self.sample_size) / ((1 + len(instances)) / self.test_size)
             if alpha == 0:
-                self.distance_scores[cur_idx, tree_idx] = 0
+                self.pointwise_scores[cur_idx, tree_idx] = 0
                 self.frequency_scores[cur_idx, tree_idx] = -f
                 self.collective_scores[cur_idx, tree_idx] = -f
             else:
                 z = utils.similarity_score(instances, node, alpha)
-                self.distance_scores[cur_idx, tree_idx] = z
+                self.pointwise_scores[cur_idx, tree_idx] = z
                 self.frequency_scores[cur_idx, tree_idx] = -f
                 self.collective_scores[cur_idx, tree_idx] = z*f
 
@@ -123,24 +123,18 @@ class TreeEnsemble:
 
         # Compute the scores from the path lengths (self.L)
         scores = {
-            'distance':   self.distance_scores.mean(1),
-            'frequency':  self.frequency_scores.mean(1),
-            'collective': self.collective_scores.mean(1)
+            'pointwise':  -self.pointwise_scores.mean(1),
+            'frequency':   self.frequency_scores.mean(1),
+            'collective': -self.collective_scores.mean(1)
         }
         return scores
 
-    def predict_from_anomaly_scores(self, scores: np.ndarray, threshold: float) -> np.ndarray:
+    def predict(self, data: np.ndarray, threshold: float, score_type: str = 'pointwise') -> np.ndarray:
         """
         TODO
         """
+        if score_type not in ['pointwise', 'frequency', 'collective']:
+            raise RuntimeError('Invalid score type. Please choose from: \'pointwise\', \'frequency\', \'collective\'')
+        scores = self.anomaly_score(data)
         out = scores >= threshold
         return out * 1
-
-    def predict(self, data: np.ndarray, threshold: float, score_type: str = 'distance') -> np.ndarray:
-        """
-        TODO
-        """
-        if score_type not in ['distance', 'frequency', 'collective']:
-            raise RuntimeError('Invalid score type. Please choose from: \'distance\', \'frequency\', \'collective\'')
-        scores = self.anomaly_score(data)
-        return self.predict_from_anomaly_scores(scores[score_type], threshold)
