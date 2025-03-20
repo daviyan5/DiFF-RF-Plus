@@ -91,7 +91,7 @@ class TreeEnsemble:
         """
         if node.is_leaf:
             instances = data[cur_idx]
-            f = ((node.size+1)/self.sample_size) / ((1+len(instances)) / self.test_size)
+            f = ((node.size + 1)/self.sample_size) / ((1 + len(instances)) / self.test_size)
             if alpha == 0:
                 self.distance_scores[cur_idx, tree_idx] = 0
                 self.frequency_scores[cur_idx, tree_idx] = -f
@@ -104,10 +104,10 @@ class TreeEnsemble:
 
         else:
 
-            left_idx = (data[:, node.splitAtt] <= node.splitValue) * cur_idx
+            left_idx = (data[:, node.split_feature] <= node.split_value) * cur_idx
             self.walk_tree(node.left, tree_idx, left_idx, data, feature_distribution, alpha)
 
-            right_idx = (data[:, node.splitAtt] > node.splitValue) * cur_idx
+            right_idx = (data[:, node.split_feature] > node.split_value) * cur_idx
             self.walk_tree(node.right, tree_idx, right_idx, data, feature_distribution, alpha)
 
 
