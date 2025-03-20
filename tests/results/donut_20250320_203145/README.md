@@ -1,0 +1,22 @@
+# Test Results
+
+## Generated Images
+
+<img src="clusters_donnuts0.png" width="300" style="margin-right: 10px;" />
+<img src="clusters_donnuts1.png" width="300" style="margin-right: 10px;" />
+<img src="clusters_donnuts2.png" width="300" style="margin-right: 10px;" />
+<img src="heatmap_diff_rf_collective_score.png" width="300" style="margin-right: 10px;" />
+<img src="heatmap_diff_rf_freq_score.png" width="300" style="margin-right: 10px;" />
+<img src="heatmap_diff_rf_point_wise_score.png" width="300" style="margin-right: 10px;" />
+<img src="heatmap_if.png" width="300" style="margin-right: 10px;" />
+
+
+## CSV Results
+
+| Method | AUC |
+| --- | --- |
+| Isolation Forest | 0.72558 |
+| diff_rf (point-wise anomaly score) | 0.947765 |
+| diff_rf (frequency of visit scoring only) | 0.9840292500000001 |
+| diff_rf (collective anomaly score) | 0.9848499999999999 |
+

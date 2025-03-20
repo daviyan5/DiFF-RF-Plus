@@ -1,0 +1,5 @@
+Method,AUC
+Isolation Forest,0.72558
+diff_rf (point-wise anomaly score),0.947765
+diff_rf (frequency of visit scoring only),0.9840292500000001
+diff_rf (collective anomaly score),0.9848499999999999

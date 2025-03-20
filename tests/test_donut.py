@@ -204,6 +204,49 @@ def save_csv_results(auc_results, out_dir):
         for method, auc_val in auc_results.items():
             writer.writerow([method, auc_val])
 
+def generate_readme(results_dir):
+    """
+    Generate a README.md file inside the results_dir.
+    The README displays all PNG images side by side and the CSV content as a Markdown table.
+    """
+
+    # List PNG images in the results directory
+    png_files = sorted([f for f in os.listdir(results_dir) if f.lower().endswith('.png')])
+
+    # Build HTML for images side by side
+    images_md = ""
+    for png in png_files:
+        images_md += f'<img src="{png}" width="300" style="margin-right: 10px;" />\n'
+
+    # Read CSV and build a Markdown table
+    csv_path = os.path.join(results_dir, "results.csv")
+    csv_md = ""
+    if os.path.exists(csv_path):
+        with open(csv_path, "r", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            rows = list(reader)
+            if rows:
+                # Create header
+                header = rows[0]
+                csv_md += "| " + " | ".join(header) + " |\n"
+                csv_md += "| " + " | ".join(["---"] * len(header)) + " |\n"
+                # Add rows
+                for row in rows[1:]:
+                    csv_md += "| " + " | ".join(row) + " |\n"
+
+    # Combine everything into the README content
+    readme_content = (
+        "# Test Results\n\n"
+        "## Generated Images\n\n"
+        f"{images_md}\n\n"
+        "## CSV Results\n\n"
+        f"{csv_md}\n"
+    )
+
+    # Write the README.md file
+    readme_path = os.path.join(results_dir, "README.md")
+    with open(readme_path, "w", encoding="utf-8") as f:
+        f.write(readme_content)
 
 def main(test_name="donut", n_trees=256, sample_size_ratio=0.25, alpha_0=1):
     # Create dataset
@@ -228,6 +271,7 @@ def main(test_name="donut", n_trees=256, sample_size_ratio=0.25, alpha_0=1):
 
     # Save AUC results to CSV
     save_csv_results(auc_results, results_dir)
+    generate_readme(results_dir)
 
 
 if __name__ == '__main__':
