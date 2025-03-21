@@ -161,7 +161,7 @@ class TreeEnsemble:
                 self.frequency_scores[cur_idx, tree_idx] = -f
                 self.collective_scores[cur_idx, tree_idx] = -f
             else:
-                z = utils.similarity_score(instances, node, alpha)
+                z = node.similarity_score(instances, alpha)
                 self.pointwise_scores[cur_idx, tree_idx] = z
                 self.frequency_scores[cur_idx, tree_idx] = -f
                 self.collective_scores[cur_idx, tree_idx] = z*f

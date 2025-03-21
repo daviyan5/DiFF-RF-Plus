@@ -39,20 +39,6 @@ def split(column):
     xmax = column.max()
     return np.random.uniform(xmin, xmax)
 
-def similarity_score(instances, node, alpha):
-    """
-    TODO
-    """
-    d = np.shape(instances)[1]
-    if len(instances) > 0:
-        d = np.shape(instances)[1]
-        similarity = (instances - node.avg) / node.std
-        similarity = 2**(-alpha * (np.sum((similarity * similarity)/d, axis=1)))
-    else:
-        similarity = 0
-    return similarity
-
-
 def empirical_entropy(hist):
     """
     TODO
