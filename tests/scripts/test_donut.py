@@ -32,7 +32,7 @@ plt.gcf().subplots_adjust(bottom=0.15)
 matplotlib.rcParams.update({'font.size': 22})
 
 # Base directory for this script (assumed to be inside the tests folder)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PKL_FILENAME = 'donut_data_problem.pkl'
 
 def get_or_create_dir(subfolder):
