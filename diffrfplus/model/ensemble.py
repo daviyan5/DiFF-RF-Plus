@@ -9,6 +9,7 @@ TODO
 
 from multiprocessing import Pool
 from functools import partial
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -20,8 +21,14 @@ def calculate_alpha(data, n_trees, sample_size, n_iter=5):
     possible_values = [1e-12, 1e-9, 1e-6, 1e-4, 1e-3, 1e-2, 0.05, 0.1, 0.5, 1, 2, 5, 10, 100]
     r_alpha = {alpha: 0.0 for alpha in possible_values}
 
-    num_parts = max(1, len(data) // sample_size)
-    partitions = [data.loc[idx] for idx in np.array_split(data.index, num_parts)]
+    reduction_value = 0.1
+    # Choose len(data) * reduction_value values
+    data_used = data.sample(frac=reduction_value, random_state=42)
+    sample_size *= reduction_value
+    sample_size = int(sample_size)
+
+    num_parts = max(1, len(data_used) // sample_size)
+    partitions = [data_used.loc[idx] for idx in np.array_split(data_used.index, num_parts)]
 
     # For each iteration
     for _ in range(n_iter):
@@ -57,7 +64,7 @@ def calculate_hyperparameters(data: np.ndarray) -> tuple:
     # TODO: Implement a better way (probably use Bayesian optimization)
     n_trees = 256
     sample_size_ratio = 0.25
-    alpha = 0.1#calculate_alpha(data, n_trees, sample_size_ratio)
+    alpha = calculate_alpha(data, n_trees, sample_size_ratio)
     sample_size = int(len(data) * sample_size_ratio)
 
     kwargs = {
@@ -71,9 +78,10 @@ class TreeEnsemble:
     """
     TODO
     """
-    def __init__(self, sample_size: int, n_trees: int = 10):
+    def __init__(self, sample_size: int, n_trees: int = 10, debug: bool = False):
         self.sample_size = sample_size
         self.n_trees = n_trees
+        self.debug = debug
         self.alpha = 1.0
 
         self.data = None
@@ -116,7 +124,8 @@ class TreeEnsemble:
                                       height_limit=height_limit)
 
         with Pool(n_jobs) as p:
-            self.trees = p.map(create_tree_partial, [data for _ in range(self.n_trees)])
+            self.trees = list(tqdm(p.imap_unordered(create_tree_partial, [data for _ in range(self.n_trees)]),
+                              total=self.n_trees, desc="Building Trees"))
         return self
 
 

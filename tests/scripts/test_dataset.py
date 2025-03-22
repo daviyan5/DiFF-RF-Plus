@@ -14,9 +14,10 @@ from sklearn.metrics import confusion_matrix, roc_curve
 
 from diffrfplus.model import TreeEnsemble, calculate_hyperparameters
 
-DEBUG = True
+DEBUG = False
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATASET_DIRS = os.path.join(BASE_DIR, "data", "data_preprocessed")
+PKL_DIR = os.path.join(BASE_DIR, "pkl")
 sys.path.insert(0, BASE_DIR)
 
 from model import DiFF_RF  # pylint: disable=import-error,wrong-import-position,wrong-import-order
@@ -26,8 +27,13 @@ def calculate_alpha_df(data, n_trees, sample_size, n_iter=5):
     possible_values = [1e-12, 1e-9, 1e-6, 1e-4, 1e-3, 1e-2, 0.05, 0.1, 0.5, 1, 2, 5, 10, 100]
     r_alpha = {alpha: 0.0 for alpha in possible_values}
 
-    num_parts = max(1, len(data) // sample_size)
-    partitions = [data.loc[idx] for idx in np.array_split(data.index, num_parts)]
+    reduction_value = 0.1
+    data_used = data.sample(frac=reduction_value, random_state=42)
+    sample_size *= reduction_value
+    sample_size = int(sample_size)
+
+    num_parts = max(1, len(data_used) // sample_size)
+    partitions = [data_used.loc[idx] for idx in np.array_split(data_used.index, num_parts)]
 
     # For each iteration
     for _ in range(n_iter):
@@ -60,7 +66,7 @@ def calculate_hyperparameters_df(data):
     n_trees = 128
     sample_size_ratio = 0.25
     sample_size = int(len(data) * sample_size_ratio)
-    alpha = 0.1#calculate_alpha_df(data, n_trees, sample_size)
+    alpha = calculate_alpha_df(data, n_trees, sample_size)
     kwargs = {
         "sample_size": sample_size,
         "n_trees": n_trees,
@@ -163,9 +169,11 @@ def main():
         print("Recalculating hyperparameters...")
         hyperparameters["DiFF-RF"] = calculate_hyperparameters_df(x_train)
         hyperparameters["DiFF-RF-Plus"] = calculate_hyperparameters(x_train)
+        with open(os.path.join(PKL_DIR, f"{data_set}_hyp.pkl"), "wb") as f:
+            pickle.dump(hyperparameters, f)
 
     else:
-        hyperparameters_file = os.path.join(DATASET_DIRS, f"{data_set}_hyp.pkl")
+        hyperparameters_file = os.path.join(PKL_DIR, f"{data_set}_hyp.pkl")
         if os.path.exists(hyperparameters_file):
             with open(hyperparameters_file, "rb") as f:
                 hyperparameters = pickle.load(f)
