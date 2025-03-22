@@ -11,6 +11,7 @@ TODO
 import numpy as np
 
 
+
 def calculate_nbins(size: float) -> float:
     """
     TODO
@@ -71,7 +72,9 @@ def weight_feature(s, nbins):
     mins = s.min()
     maxs = s.max()
 
-    if not np.isfinite(mins) or not np.isfinite(maxs) or np.abs(mins- maxs) < 1e-300:
+    if not np.isfinite(mins) or not np.isfinite(maxs) or np.abs(mins- maxs) < 1e-10:
+        return 1e-4
+    if mins == maxs:
         return 1e-4
 
     hist, _ = np.histogram(s, bins=nbins)

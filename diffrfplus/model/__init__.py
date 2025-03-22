@@ -1,1 +1,1 @@
-from .ensemble import TreeEnsemble
+from .ensemble import TreeEnsemble, calculate_hyperparameters

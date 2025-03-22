@@ -11,9 +11,61 @@ from multiprocessing import Pool
 from functools import partial
 
 import numpy as np
+import pandas as pd
 
 from .. import utils
 from .tree import Node
+
+def calculate_alpha(data, n_trees, sample_size, n_iter=5):
+    possible_values = [1e-12, 1e-9, 1e-6, 1e-4, 1e-3, 1e-2, 0.05, 0.1, 0.5, 1, 2, 5, 10, 100]
+    r_alpha = {alpha: 0.0 for alpha in possible_values}
+
+    num_parts = max(1, len(data) // sample_size)
+    partitions = [data.loc[idx] for idx in np.array_split(data.index, num_parts)]
+
+    # For each iteration
+    for _ in range(n_iter):
+        for i, p_i in enumerate(partitions):
+            x_i = pd.concat([partitions[j] for j in range(len(partitions)) if j != i], ignore_index=True)
+
+            for alpha in possible_values:
+                print(f"Calculating alpha: {alpha} for partition {i+1}/{len(partitions)}")
+                diff_rf = TreeEnsemble(sample_size=sample_size, n_trees=n_trees)
+                diff_rf.fit(x_i.values, n_jobs=8)
+
+                scores_x = np.array(diff_rf.anomaly_score(x_i.values, alpha=alpha)['pointwise'])
+                scores_p = np.array(diff_rf.anomaly_score(p_i.values, alpha=alpha)['pointwise'])
+
+                delta = 0
+                for perc in [95, 96, 97, 98, 99]:
+                    quantile_value = np.percentile(scores_x, perc)
+                    count = np.sum(scores_p > quantile_value)
+                    delta += count * (100 - perc)
+                r_alpha[alpha] += delta
+
+    total_count = n_iter * len(partitions)
+    for alpha in possible_values:
+        r_alpha[alpha] /= total_count
+
+    best_alpha = min(r_alpha, key=r_alpha.get)
+    return best_alpha
+
+def calculate_hyperparameters(data: np.ndarray) -> tuple:
+    """
+    TODO
+    """
+    # TODO: Implement a better way (probably use Bayesian optimization)
+    n_trees = 256
+    sample_size_ratio = 0.25
+    alpha = 0.1#calculate_alpha(data, n_trees, sample_size_ratio)
+    sample_size = int(len(data) * sample_size_ratio)
+
+    kwargs = {
+        "sample_size": sample_size,
+        "n_trees": n_trees,
+        "alpha": alpha,
+    }
+    return kwargs
 
 class TreeEnsemble:
     """

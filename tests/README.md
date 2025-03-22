@@ -6,7 +6,7 @@ Nesta pasta, existem 6 subpastas:
   - **data_raw**: Nesta pasta ficarão os arquivos de dataset `.csv` "puros", baixados para os testes.
   - **data_preprocessed**: Nesta pasta ficarão os arquivos `.csv` após o processamento realizado pelos notebooks.
 
-- **model**: Esta pasta contém arquivos relacionados ao modelo.
+- **model**: Esta pasta contém arquivos relacionados ao modelo original do DiffRF. Coloque nessa pasta o arquivo .py do modelo, que pode ser encontrado [aqui](https://github.com/pfmarteau/DiFF-RF/).
 
 - **notebooks**: Cada notebook nesta pasta representa um dataset. Neles, o download e o pré-processamento de todos os datasets são realizados. Execute-os antes de realizar os testes.
 

@@ -13,7 +13,6 @@ Workflow:
 import os
 import time
 import pickle
-import pathlib
 import csv
 
 import numpy as np
@@ -35,12 +34,6 @@ matplotlib.rcParams.update({'font.size': 22})
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PKL_FILENAME = 'donut_data_problem.pkl'
 
-def get_or_create_dir(subfolder):
-    """Return a subdirectory path under BASE_DIR and create it if necessary."""
-    directory = os.path.join(BASE_DIR, subfolder)
-    pathlib.Path(directory).mkdir(parents=True, exist_ok=True)
-    return directory
-
 
 def get_results_dir(test_name="donut"):
     """Create and return a unique results directory for the current test run.
@@ -48,9 +41,12 @@ def get_results_dir(test_name="donut"):
     The folder will be created under 'results/<test_name>_<date>/'.
     """
     date_str = time.strftime("%Y%m%d_%H%M%S")
-    results_parent = get_or_create_dir("results")
+    results_parent = os.path.join(BASE_DIR, "results")
+    os.makedirs(results_parent, exist_ok=True)
+
     results_dir = os.path.join(results_parent, f"{test_name}_{date_str}")
-    pathlib.Path(results_dir).mkdir(parents=True, exist_ok=True)
+    os.makedirs(results_dir, exist_ok=True)
+
     return results_dir
 
 
@@ -106,8 +102,9 @@ def create_donut_data():
 
     x_ab = np.concatenate([x_a, x_b])
 
-    # Save dataset in the lowercase 'pkl' folder.
-    pkl_dir = get_or_create_dir("pkl")
+    pkl_dir = os.path.join(BASE_DIR, "pkl")
+    os.makedirs(pkl_dir, exist_ok=True)
+
     pkl_file = os.path.join(pkl_dir, 'donut_data_problem.pkl')
     with open(pkl_file, 'wb') as f:
         pickle.dump([x_n, x_nt, x_a, x_b, x_ab], f)
@@ -118,25 +115,21 @@ def load_donut_data():
     pkl_dir = os.path.join(BASE_DIR, "pkl")
     pkl_file = os.path.join(pkl_dir, PKL_FILENAME)
     with open(pkl_file, 'rb') as f:
-        return pickle.load(f)  # returns (x_n, x_nt, x_a, x_b, x_ab)
-
+        return pickle.load(f)
 
 def plot_clusters(x_n, x_a, x_b, out_dir):
     """Plot the cluster figures and save them as PNG files."""
-    # Plot 1: Normal data
     plt.figure()
     plt.plot(x_n[:, 0], x_n[:, 1], 'bo', markersize=10)
     plt.savefig(os.path.join(out_dir, 'clusters_donnuts0.png'))
     plt.close()
 
-    # Plot 2: Normal data and anomalous cluster (partial)
     nn = len(x_a)
     plt.figure()
     plt.plot(x_n[:, 0], x_n[:, 1], 'bo', x_a[:nn, 0], x_a[:nn, 1], 'rs')
     plt.savefig(os.path.join(out_dir, 'clusters_donnuts1.png'))
     plt.close()
 
-    # Plot 3: Normal data, anomalous cluster, and background
     plt.figure()
     plt.plot(x_n[:, 0], x_n[:, 1], 'bo', x_a[:nn, 0], x_a[:nn, 1], 'rs', x_b[:nn, 0], x_b[:nn, 1], 'gd')
     plt.xticks(size=14)
@@ -210,15 +203,12 @@ def generate_readme(results_dir):
     The README displays all PNG images side by side and the CSV content as a Markdown table.
     """
 
-    # List PNG images in the results directory
     png_files = sorted([f for f in os.listdir(results_dir) if f.lower().endswith('.png')])
 
-    # Build HTML for images side by side
     images_md = ""
     for png in png_files:
         images_md += f'<img src="{png}" width="300" style="margin-right: 10px;" />\n'
 
-    # Read CSV and build a Markdown table
     csv_path = os.path.join(results_dir, "results.csv")
     csv_md = ""
     if os.path.exists(csv_path):
@@ -234,7 +224,6 @@ def generate_readme(results_dir):
                 for row in rows[1:]:
                     csv_md += "| " + " | ".join(row) + " |\n"
 
-    # Combine everything into the README content
     readme_content = (
         "# Test Results\n\n"
         "## Generated Images\n\n"
@@ -243,33 +232,26 @@ def generate_readme(results_dir):
         f"{csv_md}\n"
     )
 
-    # Write the README.md file
     readme_path = os.path.join(results_dir, "README.md")
     with open(readme_path, "w", encoding="utf-8") as f:
         f.write(readme_content)
 
 def main(test_name="donut", n_trees=256, sample_size_ratio=0.25, alpha_0=1):
-    # Create dataset
     if not os.path.exists(os.path.join(BASE_DIR, "pkl", PKL_FILENAME)):
         create_donut_data()
     x_n, x_nt, x_a, x_b, x_ab = load_donut_data()
 
-    # Create unique results directory for this test run
     results_dir = get_results_dir(test_name)
 
-    # Plot clusters and save results
     plot_clusters(x_n, x_a, x_b, results_dir)
 
-    # Compute diff_rf anomaly scores, plot heat maps, and get scores dictionary
     _, scores = compute_diff_rf_results(x_n, x_nt, x_ab, n_trees, sample_size_ratio, alpha_0, results_dir)
 
-    # Compute and print AUC scores
     y_true = np.array([-1] * len(x_nt) + [1] * len(x_ab))
     auc_results = compute_auc_scores(y_true, scores)
     for method, auc_val in auc_results.items():
         print(f"{method} AUC = {auc_val}")
 
-    # Save AUC results to CSV
     save_csv_results(auc_results, results_dir)
     generate_readme(results_dir)
 
