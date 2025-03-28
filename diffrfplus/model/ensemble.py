@@ -21,7 +21,7 @@ def calculate_alpha(data, n_trees, sample_size, n_iter=5):
     possible_values = [1e-12, 1e-9, 1e-6, 1e-4, 1e-3, 1e-2, 0.05, 0.1, 0.5, 1, 2, 5, 10, 100]
     r_alpha = {alpha: 0.0 for alpha in possible_values}
 
-    reduction_value = 0.1
+    reduction_value = 0.01
     # Choose len(data) * reduction_value values
     data_used = data.sample(frac=reduction_value, random_state=42)
     sample_size *= reduction_value
@@ -31,14 +31,13 @@ def calculate_alpha(data, n_trees, sample_size, n_iter=5):
     partitions = [data_used.loc[idx] for idx in np.array_split(data_used.index, num_parts)]
 
     # For each iteration
-    for _ in range(n_iter):
-        for i, p_i in enumerate(partitions):
+    for _ in tqdm(range(n_iter), desc="Iterations"):
+        for i, p_i in tqdm(enumerate(partitions), desc="Partitions", total=len(partitions), leave=False):
             x_i = pd.concat([partitions[j] for j in range(len(partitions)) if j != i], ignore_index=True)
 
-            for alpha in possible_values:
-                print(f"Calculating alpha: {alpha} for partition {i+1}/{len(partitions)}")
+            for alpha in tqdm(possible_values, desc="Alpha values", total=len(possible_values), leave=False):
                 diff_rf = TreeEnsemble(sample_size=sample_size, n_trees=n_trees)
-                diff_rf.fit(x_i.values, n_jobs=8)
+                diff_rf.fit(x_i.values, n_jobs=16)
 
                 scores_x = np.array(diff_rf.anomaly_score(x_i.values, alpha=alpha)['pointwise'])
                 scores_p = np.array(diff_rf.anomaly_score(p_i.values, alpha=alpha)['pointwise'])
@@ -64,8 +63,9 @@ def calculate_hyperparameters(data: np.ndarray) -> tuple:
     # TODO: Implement a better way (probably use Bayesian optimization)
     n_trees = 256
     sample_size_ratio = 0.25
-    alpha = calculate_alpha(data, n_trees, sample_size_ratio)
     sample_size = int(len(data) * sample_size_ratio)
+    alpha = calculate_alpha(data, n_trees, sample_size)
+
 
     kwargs = {
         "sample_size": sample_size,
@@ -118,14 +118,17 @@ class TreeEnsemble:
         height_limit = self.calculate_height_limit(self.sample_size)
         self.feature_distribution = utils.generate_feature_distribution(data)
 
-        create_tree_partial = partial(self.create_trees,
+        if n_jobs > 1:
+            create_tree_partial = partial(self.create_trees,
                                       feature_distribution= self.feature_distribution,
                                       sample_size=self.sample_size,
                                       height_limit=height_limit)
 
-        with Pool(n_jobs) as p:
-            self.trees = list(tqdm(p.imap_unordered(create_tree_partial, [data for _ in range(self.n_trees)]),
-                              total=self.n_trees, desc="Building Trees"))
+            with Pool(n_jobs) as p:
+                self.trees = p.map(create_tree_partial, [data for _ in range(self.n_trees)])
+        else:
+            self.trees = [self.create_trees(data, self.feature_distribution, self.sample_size, height_limit)
+                          for _ in range(self.n_trees)]
         return self
 
 

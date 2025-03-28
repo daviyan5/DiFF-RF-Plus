@@ -1,5 +1,6 @@
 all:
 	pip install .
+	clear
 	python3 tests/scripts/test_dataset.py -d CICIDS_2017
 	python3 tests/scripts/test_dataset.py -d CIDDS-001  
 	python3 tests/scripts/test_dataset.py -d Kitsune_Active_Wiretap  
