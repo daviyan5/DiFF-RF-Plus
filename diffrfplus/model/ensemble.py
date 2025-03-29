@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
-from utils import generate_feature_distribution, similarity_score
-from tree import Node
+from ..utils import generate_feature_distribution, similarity_score
+from .tree import Node
 
 def calculate_alpha(data, n_trees, sample_size, n_iter=5):
     """
