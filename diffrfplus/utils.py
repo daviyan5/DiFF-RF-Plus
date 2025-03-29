@@ -101,6 +101,16 @@ def weight_feature(s, nbins):
 
     return wmin
 
+def default_clustering_params():
+    """
+    Return default clustering parameters for HDBSCAN.
+    """
+    return {
+        'min_cluster_size': 5,
+        'min_samples': None,
+        'cluster_selection_epsilon': 0.0
+    }
+    
 def optimize_clustering(data, sample_size, tree_height):
     """
     Determine optimal clustering parameters based on data characteristics and tree structure
@@ -210,19 +220,12 @@ def cluster_data(data, hyperparams=None):
         unique_labels = unique_labels[unique_labels != -1]
     
     if len(unique_labels) == 0:
-        return np.array([np.mean(data, axis=0)]), 
-                            np.zeros(len(data)), 
-                            np.array([np.std(data, axis=0) + 1e-6])
+        return np.array([np.mean(data, axis=0)]), np.zeros(len(data)), np.array([np.std(data, axis=0) + 1e-6])
     
     centroids = np.array([np.mean(data[labels == label], axis=0) for label in unique_labels])
     
-    new_labels = np.zeros_like(labels)
-    for i, label in enumerate(unique_labels):
-        new_labels[labels == label] = i + 1 # Some labels may be -1 (noise)
-    labels = new_labels
-    
-    n_clusters = len(np.unique(labels))
-    centroid_stds = np.ones((n_clusters, data.shape[1]))
+    n_clusters = len(centroids)
+    centroid_stds = np.ones_like(centroids) * 1e-6
     
     for i in range(n_clusters):
         cluster_points = data[labels == i]

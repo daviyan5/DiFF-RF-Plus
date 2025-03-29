@@ -130,6 +130,8 @@ class DiFF_RF_Plus:
 
         if optimize_clustering:
             hyperparams = utils.optimize_clustering(data, self.sample_size, height_limit)
+        else:
+            hyperparams = utils.default_clustering_params()
 
         if n_jobs > 1:
             create_tree_partial = partial(self.create_trees,
@@ -141,7 +143,7 @@ class DiFF_RF_Plus:
                 self.trees = list(tqdm(p.imap(create_tree_partial, [data for _ in range(self.n_trees)]),
                                     total=self.n_trees, desc="Creating Trees", leave=False))
         else:
-            self.trees = [self.create_trees(data, self.feature_distribution, self.sample_size, height_limit)
+            self.trees = [self.create_trees(data, self.feature_distribution, self.sample_size, height_limit, hyperparams)
                         for _ in tqdm(range(self.n_trees), desc="Creating Trees", leave=False)]
         return self
 

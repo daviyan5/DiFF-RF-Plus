@@ -95,8 +95,7 @@ class Node:
         
         min_clustering_points = self.hyperparams.get('min_clustering_points', 10)
         if len(data) >= min_clustering_points:
-            self.centroids, self.cluster_labels, self.centroid_stds = cluster_data(data, 
-                                                                                   self.hyperparams['model'], 
+            self.centroids, self.cluster_labels, self.centroid_stds = cluster_data(data,  
                                                                                    self.hyperparams)
             
             if len(self.centroids) <= 1:
