@@ -1,0 +1,3 @@
+model,metric_type,auc,accuracy,true positive rate,false positive rate,precision,f1-score
+DiFF-RF,pointwise,0.51915625,0.24073,0.9832,0.9448875,0.20643535772400398,0.34122597718103337
+DiFF-RF,collective,0.5249125,0.24673,0.98855,0.938725,0.20840316647166093,0.34423560751812937
