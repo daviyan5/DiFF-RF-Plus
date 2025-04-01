@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
-from utils import generate_feature_distribution, similarity_score
-from tree import Node
+from ..utils import generate_feature_distribution, similarity_score, optimize_clustering, default_clustering_params
+from .tree import Node
 
 def calculate_alpha(data, n_trees, sample_size, n_iter=5):
     """
@@ -117,7 +117,7 @@ class DiFF_RF_Plus:
         rows = np.random.choice(len(data), sample_size, replace=False)
         return Node(data[rows, :], height_limit, feature_distribution, sample_size=sample_size, hyperparams=hyperparams)
 
-    def fit(self, data: np.ndarray, n_jobs: int = 1, optimize_clustering: bool = False):
+    def fit(self, data: np.ndarray, n_jobs: int = 1, optimize_clusters: bool = False):
         """
         Fit the DiFF-RF model on the training data.
         """
@@ -128,10 +128,10 @@ class DiFF_RF_Plus:
         height_limit = self.calculate_height_limit(self.sample_size)
         self.feature_distribution = generate_feature_distribution(data)
 
-        if optimize_clustering:
-            hyperparams = utils.optimize_clustering(data, self.sample_size, height_limit)
+        if optimize_clusters:
+            hyperparams = optimize_clustering(data, self.sample_size, height_limit)
         else:
-            hyperparams = utils.default_clustering_params()
+            hyperparams = default_clustering_params()
 
         if n_jobs > 1:
             create_tree_partial = partial(self.create_trees,

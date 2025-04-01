@@ -60,12 +60,40 @@ def similarity_score(instances, node, alpha):
     
     # If node has cluster centroids, use them
     if hasattr(node, 'centroids') and node.centroids is not None and len(node.centroids) > 0:
-        min_distances = np.zeros(len(instances))
-        for i, instance in enumerate(instances):
-            sq_distances = np.sum(((instance - node.centroids) / node.centroid_stds)**2 / d, axis=1)
-            min_distances[i] = np.min(sq_distances)
-        
-        return 2**(-alpha * min_distances)
+        size_mb = instances.shape[0] * instances.shape[1] * node.centroids.shape[0] * 8 / (1024 * 1024)
+        if size_mb > 8000:
+            max_instances = 8000 * 1024 * 1024 / (8 * node.centroids.shape[0] * instances.shape[1])
+            max_instances = int(max_instances)
+            remainder = instances.shape[0] % max_instances
+            min_disances_all = np.zeros((instances.shape[0]))
+
+            for i in range(0, instances.shape[0], max_instances):
+                instances_reshaped = instances[i:i+max_instances, np.newaxis, :]
+                centroids_reshaped = node.centroids[np.newaxis, :, :]
+                centroid_stds_reshaped = node.centroid_stds[np.newaxis, :, :]
+                sq_distances = np.sum(((instances_reshaped - centroids_reshaped) / centroid_stds_reshaped)**2 / d, axis=2)
+                min_distances = np.min(sq_distances, axis=1)
+                min_disances_all[i:i+max_instances] = min_distances
+
+            if remainder > 0:
+                instances_reshaped = instances[-remainder:, np.newaxis, :]
+                centroids_reshaped = node.centroids[np.newaxis, :, :]
+                centroid_stds_reshaped = node.centroid_stds[np.newaxis, :, :]
+                sq_distances = np.sum(((instances_reshaped - centroids_reshaped) / centroid_stds_reshaped)**2 / d, axis=2)
+                min_distances = np.min(sq_distances, axis=1)
+                min_disances_all[-remainder:] = min_distances
+
+            return 2**(-alpha * min_disances_all)
+        else:
+            instances_reshaped = instances[:, np.newaxis, :]
+            centroids_reshaped = node.centroids[np.newaxis, :, :]
+            centroid_stds_reshaped = node.centroid_stds[np.newaxis, :, :]
+            
+            sq_distances = np.sum(((instances_reshaped - centroids_reshaped) / centroid_stds_reshaped)**2 / d, axis=2)
+            
+            min_distances = np.min(sq_distances, axis=1)
+            
+            return 2**(-alpha * min_distances)
     else:
         similarity = (instances - node.avg) / node.std
         return 2**(-alpha * (np.sum((similarity * similarity)/d, axis=1)))

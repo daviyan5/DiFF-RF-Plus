@@ -9,7 +9,7 @@ DiFF-RF Random Partitioning Tree Class
 
 import random
 import numpy as np
-from utils import generate_feature_distribution, split_column, cluster_data
+from ..utils import generate_feature_distribution, split_column, cluster_data
 
 class Node:
     """
